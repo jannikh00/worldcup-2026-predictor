@@ -1,7 +1,7 @@
 """
 join_features.py
 ================
-Pipeline Step 3 — attach team features to each historical match.
+attach team features to each historical match.
 
 For every row in matches_with_elo.csv we look up the squad features of BOTH
 teams *for the year the match was played in*, then add:
@@ -10,13 +10,6 @@ teams *for the year the match was played in*, then add:
   home_age_std  / away_age_std         age_std_diff
   home_value_mean / away_value_mean    value_mean_diff
   home_value_std  / away_value_std     value_std_diff
-
-Why home_/away_ and not just "age_mean":
-  A match has two teams, so each base feature needs a home and an away copy.
-  The four *_diff columns are the per-feature comparison the prediction model
-  actually trains on. Diffs are computed home - away, matching the direction of
-  your existing elo_diff (= elo_home_pre - elo_away_pre), so all "_diff" columns
-  in the file point the same way.
 
 Year matching:
   The match year comes from the date column; each team is joined on
@@ -29,8 +22,6 @@ Coverage:
   the row but get NaN for that side's features (and NaN diffs). A second file,
   matches_with_features_trainable.csv, is written containing only rows where
   BOTH teams were found - that's the directly trainable subset.
-
-Run:  python3 join_features.py
 """
 
 import os
@@ -43,8 +34,7 @@ MATCHES  = os.path.join(_DIR, "matches_with_elo.csv")
 OUT_ALL       = os.path.join(_DIR, "matches_with_features.csv")
 OUT_TRAINABLE = os.path.join(_DIR, "matches_with_features_trainable.csv")
 
-# The four per-team features we attach (n_players is left out of the join on
-# purpose; add it here if you want it as a feature too).
+# The four per-team features we attach
 BASE = ["age_mean", "age_std", "value_mean", "value_std"]
 
 

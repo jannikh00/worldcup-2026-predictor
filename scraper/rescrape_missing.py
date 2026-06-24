@@ -10,16 +10,6 @@ Why a separate script instead of re-running the whole grid:
     extract_players, aggregate), so the 8 repaired rows are computed with the
     exact same extraction + population-std logic as the other 232 rows. No
     methodological drift between the original cells and the repaired ones.
-
-Anti-bot note:
-  Transfermarkt 403s bots, so the reliable path is the SAME as your main script:
-  open each of the 8 squad pages in a browser, Save As ->
-      data/pages/<country>_<year>.html
-  using the exact country spelling below (spaces are fine in the filename, e.g.
-  "Czech Republic_2022.html"). get_html() prefers the saved page automatically;
-  it only falls back to requests if no file is found.
-
-Run:  python3 rescrape_missing.py
 """
 
 import os
@@ -110,7 +100,7 @@ def main():
     merged.to_csv(OUT_FEATURES, index=False)
 
     print(f"\nMerged file -> {OUT_FEATURES}  ({len(merged)} rows)")
-    print("Review it, then replace data/team_features.csv with it if it looks right.")
+    # print("Review it, then replace data/team_features.csv with it if it looks right.")
 
     still_missing = [m for m in MISSING if m not in got]
     if still_missing:

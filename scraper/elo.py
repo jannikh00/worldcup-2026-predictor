@@ -1,7 +1,7 @@
 """
 elo.py
 ============
-Pipeline Step 1 — build the match "spine" and attach point-in-time Elo ratings.
+build the match "spine" and attach point-in-time Elo ratings.
 
 WHY WE DON'T SCRAPE eloratings.net DIRECTLY
 -------------------------------------------
@@ -15,18 +15,15 @@ headless browser like Playwright, which is slow and fragile). Instead we:
      eloratings.net documents (match-importance weighting, home advantage,
      and a goal-difference adjustment).
 
-This gives us, for every match, each team's Elo *before* kickoff -> the
+This gives us, for every match, each team's Elo BEFORE kickoff -> the
 `elo_diff` feature, with no data leakage. Computing Elo ourselves is also a
 genuine original contribution and removes any dependency on a fragile website.
-(Your *scraping* requirement is covered separately by the Transfermarkt step.)
 
 DATE CUTOFF
 -----------
 Elo needs history to "warm up", so we compute over ALL matches since 1872,
 then keep only matches from START_YEAR (2022) onward in the final output, so
 the 2022 World Cup is included.
-
-Run:  python3 elo.py
 """
 
 import io

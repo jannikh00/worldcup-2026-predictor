@@ -1,7 +1,7 @@
 """
 scrape_transfermarkt.py
 =======================
-Pipeline Step 2 — collect squad data (age + market value) per national team,
+collect squad data (age + market value) per national team,
 for each season 2022..2026, via an AI model on the NRP (OpenAI-compatible) endpoint.
 
 DIVISION OF LABOUR
@@ -14,23 +14,13 @@ DIVISION OF LABOUR
 NRP ENDPOINT (OpenAI-compatible)
 --------------------------------
   base_url : https://ellm.nrp-nautilus.io/v1
-  api_key  : a token you mint at the NRP LLM token page (store in env NRP_API_KEY)
-  model    : "gpt-oss" (stable, good for extraction) or "qwen3" (long context)
-  Note: some models "think" by default; we disable that for clean JSON + speed.
-
-GETTING THE HTML
-----------------
-Transfermarkt blocks bots, so requests may 403. The script DECOUPLES fetching
-from extraction:
-  - It first looks for a saved page at  data/pages/<country>_<year>.html
-    (open the squad page in your browser, Save As -> that folder).
-  - Otherwise it falls back to requests.
-The AI-extraction step is identical either way.
+  api_key  : NRP token
+  model    : "gpt-oss"
 
 INPUT
 -----
 data/teams.csv  with columns:  country,slug,team_id
-  country -> the name you'll join on later (stay consistent)
+  country -> the name that'll be joined on later
   slug    -> the URL slug, e.g. "brasilien"
   team_id -> the Transfermarkt club/verein id, e.g. 3439
   The script builds:  https://www.transfermarkt.com/<slug>/kader/verein/<team_id>/saison_id/<year>
@@ -40,8 +30,6 @@ OUTPUT
 ------
 data/players_raw.csv    one row per (player, year)
 data/team_features.csv  one row per (country, year): age_mean/std, value_mean/std
-
-Run:  python3 scrape_transfermarkt.py
 """
 
 import os
@@ -60,15 +48,15 @@ load_dotenv()
 # ------------------------------- Config -----------------------------------
 _HERE = os.path.dirname(os.path.abspath(__file__))
 TEAMS_CSV     = os.path.join(_HERE, "../data/teams.csv")    # input: country,slug,team_id
-PAGES_DIR     = os.path.join(_HERE, "../data/pages")        # optional saved HTML: <country>_<year>.html
+PAGES_DIR     = os.path.join(_HERE, "../data/pages")        # saved HTML: <country>_<year>.html
 PLAYERS_CSV   = os.path.join(_HERE, "../data/players_raw.csv")   # output: one row per (player, year)
 FEATURES_CSV  = os.path.join(_HERE, "../data/team_features.csv") # output: one row per (country, year)
 
 YEARS         = [2022, 2023, 2024, 2025, 2026]   # saison_id values to collect
 BASE_URL      = "https://ellm.nrp-nautilus.io/v1"
-MODEL         = "gpt-oss"                      # or "qwen3" for longer context
+MODEL         = "gpt-oss"
 DISABLE_THINKING = True                        # strip model "thinking" for clean JSON
-REQUEST_PAUSE = 1.5                            # seconds between network fetches (be polite)
+REQUEST_PAUSE = 1.5                            # seconds between network fetches
 
 # Instruction the AI follows to turn raw HTML into structured player rows.
 EXTRACTION_SYSTEM_PROMPT = """You are a precise data-extraction tool.
@@ -178,7 +166,7 @@ def extract_players(html):
             {"role": "user", "content": clean_html(html)},
         ],
     )
-    # Disable "thinking" on models that support the flag (qwen3 etc.) for clean JSON.
+    # Disable "thinking" on models that support the flag
     if DISABLE_THINKING:
         kwargs["extra_body"] = {"chat_template_kwargs": {"enable_thinking": False}}
     try:

@@ -10,8 +10,6 @@ Drops:
 
 Reads : ../data/matches_with_features_trainable.csv
 Writes: ../data/matches_with_features_model.csv
-
-Run:  python3 drop_identifiers.py
 """
 
 import os

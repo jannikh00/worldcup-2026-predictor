@@ -6,8 +6,6 @@ Print the head of the two joined match files for a quick side-by-side look.
 Files live in the neighbouring data/ folder:
   ../data/matches_with_features.csv             (all matches, NaN where unmatched)
   ../data/matches_with_features_trainable.csv   (only matches with both teams resolved)
-
-Run:  python3 preview_heads.py
 """
 
 import os

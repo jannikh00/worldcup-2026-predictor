@@ -4,8 +4,6 @@ preview_model.py
 Print the info and head of the model-ready match file.
 
 Reads: ../data/matches_with_features_model.csv
-
-Run:  python3 preview_model.py
 """
 
 import os
