@@ -1,4 +1,14 @@
-numpy==2.4.6
+# Pinned to the versions the results in README.md were produced with.
+# Python 3.13.
+
+# data pipeline
 pandas==3.0.3
-python-dateutil==2.9.0.post0
-six==1.17.0
+numpy==2.4.6
+requests==2.34.2
+
+# LLM-based squad extraction (pipeline/scrape_squads.py)
+openai==2.43.0
+python-dotenv==1.2.2
+
+# modelling + evaluation (models/)
+scikit-learn==1.9.0

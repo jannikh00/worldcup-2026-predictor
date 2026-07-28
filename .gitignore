@@ -1,5 +1,25 @@
+# environments
 venv/
-data/
+.venv/
+env/
+
+# python
 __pycache__/
 *.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# secrets
 .env
+
+# os
+.DS_Store
+Thumbs.db
+
+# editors
+.idea/
+.vscode/
+
+# Raw and re-downloadable data. Everything under data/processed/ IS committed
+# on purpose, so the repo is runnable and the README's numbers are checkable.
+data/raw/
