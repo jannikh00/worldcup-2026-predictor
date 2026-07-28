@@ -6,22 +6,22 @@ full run, then merge them into team_features.csv.
 
 Why a separate script instead of re-running the whole grid:
   - It hits 8 pages instead of 48*5 = 240, so it's fast and polite.
-  - It REUSES scrape_transfermarkt's own functions (build_url, get_html,
+  - It REUSES scrape_squads' own functions (build_url, get_html,
     extract_players, aggregate), so the 8 repaired rows are computed with the
     exact same extraction + population-std logic as the other 232 rows. No
     methodological drift between the original cells and the repaired ones.
+
+The merge is idempotent: existing rows for the repaired (country, year) cells
+are dropped before the fresh ones are appended, so re-running is safe.
 """
 
-import os
 import csv
 
 import pandas as pd
 
 # Reuse the real pipeline so aggregation stays identical to the 232 good rows.
-from transfermarkt import (
-    build_url, get_html, extract_players, aggregate,
-    TEAMS_CSV, FEATURES_CSV,
-)
+from scrape_squads import build_url, get_html, extract_players, aggregate
+from paths import TEAMS_CSV, TEAM_FEATURES_CSV, PLAYERS_RESCRAPED_CSV, ensure_dirs
 
 # The exact cells that failed in the full scrape (all are 2022-2025 pool years).
 MISSING = [
@@ -35,8 +35,8 @@ MISSING = [
     ("Turkey",         2024),
 ]
 
-OUT_FEATURES = os.path.join(os.path.dirname(FEATURES_CSV), "team_features_rescraped.csv")
-OUT_PLAYERS  = os.path.join(os.path.dirname(FEATURES_CSV), "players_rescraped.csv")
+FEATURES_CSV = TEAM_FEATURES_CSV     # read and written back in place
+OUT_PLAYERS = PLAYERS_RESCRAPED_CSV
 
 
 def load_team_lookup():
@@ -49,6 +49,7 @@ def load_team_lookup():
 
 
 def main():
+    ensure_dirs()
     lut = load_team_lookup()
 
     all_players = []
@@ -97,10 +98,9 @@ def main():
     merged = (pd.concat([base, new_rows], ignore_index=True)
                 .sort_values(key)
                 .reset_index(drop=True))
-    merged.to_csv(OUT_FEATURES, index=False)
+    merged.to_csv(FEATURES_CSV, index=False)
 
-    print(f"\nMerged file -> {OUT_FEATURES}  ({len(merged)} rows)")
-    # print("Review it, then replace data/team_features.csv with it if it looks right.")
+    print(f"\nMerged file -> {FEATURES_CSV}  ({len(merged)} rows)")
 
     still_missing = [m for m in MISSING if m not in got]
     if still_missing:
