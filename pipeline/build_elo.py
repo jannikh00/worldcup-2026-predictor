@@ -1,5 +1,5 @@
 """
-elo.py
+build_elo.py
 ============
 build the match "spine" and attach point-in-time Elo ratings.
 
@@ -29,15 +29,14 @@ the 2022 World Cup is included.
 import io
 import pandas as pd
 import requests
-from pathlib import Path
+
+from paths import RESULTS_CSV, MATCHES_ELO_CSV, ensure_dirs
 
 # ------------------------------- Config -----------------------------------
 START_YEAR = 2022          # keep matches from this year onward (2022 -> last World Cup included)
 INITIAL_ELO = 1500.0       # every team starts here; ratings converge long before 2022
 HOME_ADVANTAGE = 100.0     # Elo points added to the home team (eloratings uses ~100); 0 at neutral venues
-BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = BASE_DIR.parent / "data"
-OUTPUT_CSV = DATA_DIR / "matches_with_elo.csv"
+OUTPUT_CSV = MATCHES_ELO_CSV
 
 # martj42 international results (matches + scores). Branch is usually "master";
 # we also try "main" as a fallback in case the repo was renamed.
@@ -152,8 +151,20 @@ def compute_elo(df):
     return pd.DataFrame(rows), ratings
 
 
-def load_results():
-    """Download the international results CSV from GitHub (tries both branch names)."""
+def load_results(use_cache=True):
+    """Load the international results feed.
+
+    The upstream feed is append-only and updated after every international
+    window, so a live download would silently change the dataset from run to
+    run. We therefore cache the first download to data/raw/results.csv and
+    reuse it, which is what makes the committed outputs reproducible. Delete
+    that file (or pass use_cache=False) to pull a fresh snapshot.
+    """
+    if use_cache and RESULTS_CSV.exists():
+        df = pd.read_csv(RESULTS_CSV)
+        print(f"Using cached snapshot: {RESULTS_CSV}  ({len(df):,} rows)")
+        return df
+
     for url in RESULTS_URLS:
         try:
             print(f"Downloading results from: {url}")
@@ -161,6 +172,9 @@ def load_results():
             r.raise_for_status()
             df = pd.read_csv(io.StringIO(r.text))
             print(f"  OK - {len(df):,} rows loaded")
+            ensure_dirs()
+            df.to_csv(RESULTS_CSV, index=False)
+            print(f"  cached snapshot -> {RESULTS_CSV}")
             return df
         except Exception as e:
             print(f"  failed ({e}); trying next URL...")
@@ -204,7 +218,7 @@ def main():
     print(out.head(8).to_string(index=False))
 
     # 7) save
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    ensure_dirs()
     out.to_csv(OUTPUT_CSV, index=False)
     print(f"\nSaved -> {OUTPUT_CSV}")
 

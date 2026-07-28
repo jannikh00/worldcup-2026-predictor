@@ -1,6 +1,6 @@
 """
-scrape_transfermarkt.py
-=======================
+scrape_squads.py
+================
 collect squad data (age + market value) per national team,
 for each season 2022..2026, via an AI model on the NRP (OpenAI-compatible) endpoint.
 
@@ -23,13 +23,17 @@ data/teams.csv  with columns:  country,slug,team_id
   country -> the name that'll be joined on later
   slug    -> the URL slug, e.g. "brasilien"
   team_id -> the Transfermarkt club/verein id, e.g. 3439
-  The script builds:  https://www.transfermarkt.com/<slug>/kader/verein/<team_id>/saison_id/<year>
+  The script builds:  https://www.transfermarkt.us/<slug>/kader/verein/<team_id>/saison_id/<year>
   (Open a national team -> Squad -> read slug and id straight from the URL.)
 
 OUTPUT
 ------
-data/players_raw.csv    one row per (player, year)
-data/team_features.csv  one row per (country, year): age_mean/std, value_mean/std
+data/raw/players.csv             one row per (player, year)
+data/processed/team_features.csv one row per (country, year): age_mean/std, value_mean/std
+
+REQUIRES
+--------
+NRP_API_KEY in the environment (see .env.example).
 """
 
 import os
@@ -43,14 +47,12 @@ import requests
 from openai import OpenAI
 from dotenv import load_dotenv
 
+from paths import TEAMS_CSV, PAGES_DIR, PLAYERS_CSV, TEAM_FEATURES_CSV, ensure_dirs
+
 load_dotenv()
 
 # ------------------------------- Config -----------------------------------
-_HERE = os.path.dirname(os.path.abspath(__file__))
-TEAMS_CSV     = os.path.join(_HERE, "../data/teams.csv")    # input: country,slug,team_id
-PAGES_DIR     = os.path.join(_HERE, "../data/pages")        # saved HTML: <country>_<year>.html
-PLAYERS_CSV   = os.path.join(_HERE, "../data/players_raw.csv")   # output: one row per (player, year)
-FEATURES_CSV  = os.path.join(_HERE, "../data/team_features.csv") # output: one row per (country, year)
+FEATURES_CSV = TEAM_FEATURES_CSV
 
 YEARS         = [2022, 2023, 2024, 2025, 2026]   # saison_id values to collect
 BASE_URL      = "https://ellm.nrp-nautilus.io/v1"
@@ -200,6 +202,7 @@ def aggregate(players_df):
 
 # ---------------------------------- Main ----------------------------------
 def main():
+    ensure_dirs()
     teams = list(csv.DictReader(open(TEAMS_CSV, encoding="utf-8")))
     print(f"Loaded {len(teams)} teams from {TEAMS_CSV}; collecting years {YEARS}")
 
@@ -226,7 +229,6 @@ def main():
 
     # save raw per-player data
     players_df = pd.DataFrame(all_players)
-    os.makedirs(os.path.dirname(PLAYERS_CSV), exist_ok=True)
     players_df.to_csv(PLAYERS_CSV, index=False)
     print(f"\nSaved {len(players_df)} player rows -> {PLAYERS_CSV}")
 
