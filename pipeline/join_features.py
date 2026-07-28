@@ -19,26 +19,25 @@ Year matching:
 Coverage:
   The match file contains hundreds of national teams; the feature table only
   has the 48 2026 World Cup squads. Matches involving a non-feature team keep
-  the row but get NaN for that side's features (and NaN diffs). A second file,
-  matches_with_features_trainable.csv, is written containing only rows where
-  BOTH teams were found - that's the directly trainable subset.
+  the row but get NaN for that side's features (and NaN diffs). The subset
+  where BOTH teams resolved is what make_model_table.py turns into the
+  model-ready table.
 """
 
-import os
 import pandas as pd
 
-_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
+from paths import TEAM_FEATURES_CSV, MATCHES_ELO_CSV, MATCHES_FEATURES_CSV, ensure_dirs
 
-FEATURES = os.path.join(_DIR, "team_features_rescraped.csv")
-MATCHES  = os.path.join(_DIR, "matches_with_elo.csv")
-OUT_ALL       = os.path.join(_DIR, "matches_with_features.csv")
-OUT_TRAINABLE = os.path.join(_DIR, "matches_with_features_trainable.csv")
+FEATURES = TEAM_FEATURES_CSV
+MATCHES = MATCHES_ELO_CSV
+OUT_ALL = MATCHES_FEATURES_CSV
 
 # The four per-team features we attach
 BASE = ["age_mean", "age_std", "value_mean", "value_std"]
 
 
 def main():
+    ensure_dirs()
     feat = pd.read_csv(FEATURES)
     matches = pd.read_csv(MATCHES)
 
@@ -68,16 +67,13 @@ def main():
 
     matches.to_csv(OUT_ALL, index=False)
 
-    # --- trainable subset: both teams resolved ---------------------------
-    both = matches["home_age_mean"].notna() & matches["away_age_mean"].notna()
-    matches[both].to_csv(OUT_TRAINABLE, index=False)
-
     # --- report ----------------------------------------------------------
     home_ok = matches["home_age_mean"].notna()
     away_ok = matches["away_age_mean"].notna()
+    both = home_ok & away_ok
     n = len(matches)
     print(f"Matches in            : {n}")
-    print(f"Both teams matched    : {both.sum()}  -> {OUT_TRAINABLE}")
+    print(f"Both teams matched    : {both.sum()}  (-> make_model_table.py)")
     print(f"Only home matched     : {(home_ok & ~away_ok).sum()}")
     print(f"Only away matched     : {(~home_ok & away_ok).sum()}")
     print(f"Neither matched       : {(~home_ok & ~away_ok).sum()}")
