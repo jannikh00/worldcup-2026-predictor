@@ -1,3 +1,23 @@
+"""
+baseline.py
+===========
+The first model that shipped against this dataset: a 3-class result classifier
+(home win / away win / draw) on the five symmetric difference features, plus a
+split draw-vs-not / win-vs-loss variant.
+
+Kept AS-IS as the reference point. The evaluation setup we used at the time is
+optimistic: it augments the data with a mirrored copy of every match and only
+then splits randomly, so a match and its own mirror can land on opposite sides
+of the split, and the split ignores time entirely. `evaluate.py` quantifies
+exactly how much that inflates the numbers. Read the two together; the gap is
+the point.
+
+Built jointly as a shared project: the classifier is a collaborator's work, the
+evaluation harness is mine.
+"""
+
+from pathlib import Path
+
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -5,10 +25,12 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, classification_report
 
+DATA = Path(__file__).resolve().parents[1] / "data" / "processed" / "matches_model.csv"
+
 # ============================================================
 # 1. Load & prep data
 # ============================================================
-df = pd.read_csv("matches_with_features_model.csv")
+df = pd.read_csv(DATA)
 label_map = {"H": 1, "A": 0, "D": 2}
 df["label"] = df["result"].map(label_map)
 
