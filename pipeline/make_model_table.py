@@ -59,9 +59,13 @@ def main():
 
     out = df.drop(columns=present)
 
-    # sort chronologically so the file itself is in time order - makes the
-    # time-based split in models/ obvious and reproducible
-    out = out.sort_values("date").reset_index(drop=True)
+    # Sort chronologically so the file itself is in time order - makes the
+    # time-based split in models/ obvious and reproducible.
+    # kind="mergesort" is deliberate: pandas defaults to quicksort, which is
+    # NOT stable. Dozens of matches share a date, so an unstable sort permutes
+    # them arbitrarily and any downstream script that re-sorts would land on a
+    # different row order - and therefore a different random train/test split.
+    out = out.sort_values("date", kind="mergesort").reset_index(drop=True)
 
     out.to_csv(OUT_FILE, index=False)
     print(f"dropped: {present}")

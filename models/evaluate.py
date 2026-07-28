@@ -74,7 +74,10 @@ N_FOLDS = 5               # forward-chaining folds
 def load():
     df = pd.read_csv(DATA, parse_dates=["date"])
     df["label"] = df["result"].map(LABEL_MAP)
-    df = df.sort_values("date").reset_index(drop=True)
+    # Stable sort: the file is already chronological, so this is a no-op that
+    # stays a no-op. pandas' default quicksort would permute same-date matches
+    # and silently change every random split downstream.
+    df = df.sort_values("date", kind="mergesort").reset_index(drop=True)
     # match_id identifies the real-world event, so a match and its mirror share
     # one id. That is what lets us keep them on the same side of a split.
     df["match_id"] = np.arange(len(df))
