@@ -1,15 +1,21 @@
 # World Cup 2026 — Match Result Prediction
 
 An end-to-end pipeline that turns two public football data sources into a
-model-ready table of international matches, and a time-aware evaluation of how
-well match results can actually be predicted from it.
+model-ready table of international matches, and a four-protocol evaluation that
+measures how much a common augment-before-you-split mistake distorts the result
+— including a case where the *contaminated* protocol scores **lower**, for a
+reason that isn't the obvious one.
 
-The short version of the result: **a chronologically-split model reaches ~52%
-three-class accuracy against a 43% always-pick-home baseline, and almost all of
-that signal comes from Elo alone.** The squad market-value and age features I
-scraped add roughly 1.5 points — which is inside the fold-to-fold noise of the
-evaluation, so this repo reports them as *not demonstrably useful* rather than
-as a win.
+The honest, deployment-shaped number: **a chronologically-split model reaches
+~52% three-class accuracy against a 43% always-pick-home baseline, and almost
+all of that signal comes from Elo alone.** The squad market-value and age
+features I scraped add roughly 1.5 percentage points — inside the fold-to-fold
+noise of the evaluation, so this repo reports them as *not demonstrably useful*
+rather than as a win.
+
+Built jointly as a shared project: the data pipeline and the evaluation layer
+are mine, the classifier in `models/baseline.py` is a collaborator's. Full
+breakdown under [Contributions](#contributions).
 
 ---
 
@@ -241,7 +247,7 @@ docs/data-dictionary.md
 
 Built jointly as a shared project.
 
-**Mine — the data and evaluation layer, which is the bulk of this repository:**
+**Mine — the data and evaluation layer:**
 
 - Source selection and the decision to reconstruct Elo rather than scrape it
 - `pipeline/` end to end: LLM-based squad extraction, the point-in-time Elo
