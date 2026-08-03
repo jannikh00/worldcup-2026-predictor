@@ -1,5 +1,7 @@
 # World Cup 2026 — Match Result Prediction
 
+[![CI](https://github.com/jannikh00/worldcup-2026-predictor/actions/workflows/ci.yml/badge.svg)](https://github.com/jannikh00/worldcup-2026-predictor/actions/workflows/ci.yml)
+
 An end-to-end pipeline that turns two public football data sources into a
 model-ready table of international matches, and a four-protocol evaluation that
 measures how much a common augment-before-you-split mistake distorts the result
@@ -22,6 +24,14 @@ breakdown under [Contributions](#contributions).
 ## Results
 
 Three-class outcome (home win / away win / draw), 598 matches, 2022–2026.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/protocol-comparison-dark.png">
+  <img src="docs/protocol-comparison.png" alt="Left panel: three-class accuracy for four models under each of the four evaluation protocols, plotted on a shared axis. Protocol A separates from the rest. Right panel: protocol D means with plus or minus one standard deviation error bars; all four intervals overlap.">
+</picture>
+
+Both panels share one axis, and every value is in the tables below. Regenerate
+the figure with `python models/plot_results.py`.
 
 | Model | Chronological split | Forward-chaining CV |
 |---|---|---|
@@ -57,12 +67,15 @@ not land on opposite sides of the split.
 `models/evaluate.py` runs four protocols side by side to make the cost of this
 explicit:
 
-| | Protocol | Accuracy (best model) |
-|---|---|---|
-| **A** | mirror → random split (contaminated) | 0.513 |
-| **B** | random split, mirror train fold only | 0.567 |
-| **C** | chronological split, mirror train fold only | 0.519 |
-| **D** | forward-chaining CV | 0.501 |
+| Model | **A**<br>mirror → random split<br>*(contaminated)* | **B**<br>random split,<br>mirror train only | **C**<br>chronological split,<br>mirror train only | **D**<br>forward-chaining CV |
+|---|---|---|---|---|
+| Always predict home win | 0.363 | 0.442 | 0.427 | 0.417 |
+| Logistic regression, `elo_diff` only | 0.500 | 0.508 | 0.505 | 0.485 |
+| Logistic regression, all 5 features | 0.513 | 0.533 | **0.519** | 0.501 |
+| Random forest, all 5 features | 0.496 | 0.567 | 0.515 | 0.491 |
+
+This table is the figure above in numbers — nothing in the chart depends on
+colour alone.
 
 Under protocol A, **194 of 217 test matches have their own mirrored twin in the
 training set** (89%).

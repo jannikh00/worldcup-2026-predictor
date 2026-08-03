@@ -45,9 +45,12 @@ from evaluate import (              # noqa: E402
 DOCS = Path(__file__).resolve().parents[1] / "docs"
 CUTOFF = pd.Timestamp("2025-01-01")
 
-# Protocol labels, in the order the argument is made.
+# Protocol labels, in the order the argument is made. Plain ASCII on purpose:
+# an arrow glyph is missing from Helvetica Neue and renders as a tofu box on
+# macOS while working fine on the Linux runner, so the figure would differ
+# between the machine that commits it and CI.
 PROTOCOLS = [
-    ("A", "mirror → random split\n(contaminated)"),
+    ("A", "mirror, then random split\n(contaminated)"),
     ("B", "random split,\nmirror train only"),
     ("C", "chronological split,\nmirror train only"),
     ("D", "forward-chaining CV\n(mean of 5 folds)"),
@@ -92,6 +95,21 @@ def collect():
     return models, acc, spread, shared
 
 
+def xlimits(acc, spread):
+    """One x-range for both panels.
+
+    The panels sit side by side, so a reader compares dot positions across them.
+    Letting each autoscale would put the same accuracy at two different
+    horizontal positions - the same misreading a dual-axis chart invites.
+    """
+    vals = [v for row in acc.values() for v in row.values()]
+    vals += [m - s for m, s in spread.values()]
+    vals += [m + s for m, s in spread.values()]
+    lo, hi = min(vals), max(vals)
+    pad = (hi - lo) * 0.09
+    return lo - pad, hi + pad
+
+
 def draw(models, acc, spread, shared, theme, path):
     plt.rcParams.update({
         "font.family": "sans-serif",
@@ -101,8 +119,13 @@ def draw(models, acc, spread, shared, theme, path):
     })
 
     fig, (ax1, ax2) = plt.subplots(
-        1, 2, figsize=(12.0, 4.9), gridspec_kw={"width_ratios": [1.85, 1]}
+        1, 2, figsize=(12.0, 5.3), gridspec_kw={"width_ratios": [1.7, 1]}
     )
+    # Explicit margins rather than tight_layout: the title and subtitle are
+    # placed in figure coordinates, and tight_layout would reflow the axes out
+    # from under them.
+    fig.subplots_adjust(left=0.155, right=0.985, top=0.70, bottom=0.175,
+                        wspace=0.42)
 
     colour = dict(zip(models, theme["series"]))
     # Sub-row offsets inside each protocol group, first model on top.
@@ -129,7 +152,7 @@ def draw(models, acc, spread, shared, theme, path):
     ax1.set_xlabel("Three-class accuracy", fontsize=8.5, color=theme["ink2"],
                    labelpad=8)
     ax1.set_title("Accuracy by protocol", fontsize=10.5, color=theme["ink"],
-                  loc="left", pad=12, fontweight="semibold")
+                  loc="left", pad=12, fontweight="bold")
 
     # ---------------------------------------------------------------- right
     order = [m for m in models if m in spread]
@@ -153,10 +176,12 @@ def draw(models, acc, spread, shared, theme, path):
     ax2.set_xlabel("Accuracy, mean ± 1 SD across folds", fontsize=8.5,
                    color=theme["ink2"], labelpad=8)
     ax2.set_title("Protocol D — fold-to-fold spread", fontsize=10.5,
-                  color=theme["ink"], loc="left", pad=12, fontweight="semibold")
+                  color=theme["ink"], loc="left", pad=12, fontweight="bold")
 
     # ---------------------------------------------------------------- chrome
+    xlim = xlimits(acc, spread)
     for ax in (ax1, ax2):
+        ax.set_xlim(*xlim)                    # shared scale across both panels
         ax.grid(axis="x", color=theme["grid"], linewidth=1, zorder=0)
         ax.set_axisbelow(True)
         for side in ("top", "right", "left"):
@@ -176,24 +201,23 @@ def draw(models, acc, spread, shared, theme, path):
     fig.legend(
         handles=handles, loc="lower center", ncol=len(models),
         frameon=False, fontsize=8.5, labelcolor=theme["ink2"],
-        bbox_to_anchor=(0.5, -0.03), handletextpad=0.4, columnspacing=1.8,
+        bbox_to_anchor=(0.5, 0.005), handletextpad=0.4, columnspacing=1.8,
     )
 
-    fig.suptitle(
+    fig.text(
+        0.012, 0.955,
         "The evaluation protocol moves the number more than the model does",
-        fontsize=12.5, color=theme["ink"], x=0.008, ha="left", y=1.04,
-        fontweight="semibold",
+        fontsize=13, color=theme["ink"], ha="left", va="top", fontweight="bold",
     )
     fig.text(
-        0.008, 0.965,
-        f"Protocol A has its mirrored twin in training for {shared} of its test matches, yet scores no higher — "
-        "mirroring the test set\nerases home advantage. C is the deployment-shaped number; D shows the spread a "
-        "single split hides.",
-        fontsize=9, color=theme["ink2"], ha="left", va="bottom", linespacing=1.6,
+        0.012, 0.878,
+        f"Protocol A has its mirrored twin in training for {shared} of its test matches, yet scores no higher: "
+        "mirroring the test set erases\nhome advantage. C is the deployment-shaped number; D shows the fold-to-fold "
+        "spread that a single split hides.",
+        fontsize=9.5, color=theme["ink2"], ha="left", va="top", linespacing=1.7,
     )
 
-    fig.tight_layout(rect=[0, 0.03, 1, 0.94])
-    fig.savefig(path, dpi=200, facecolor=theme["surface"], bbox_inches="tight")
+    fig.savefig(path, dpi=200, facecolor=theme["surface"])
     plt.close(fig)
     print(f"wrote {path}")
 
