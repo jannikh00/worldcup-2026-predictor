@@ -157,6 +157,57 @@ python pipeline/validate.py
 Re-scraping squads from scratch additionally needs `NRP_API_KEY` (see
 `.env.example`) and is the only step that requires credentials.
 
+### Making a prediction
+
+`models/baseline.py` runs straight through and ends with a worked example —
+Argentina 2022 vs Germany 2014 — printed under `PART C`:
+
+```bash
+python models/baseline.py
+```
+
+There is no CLI for it. To predict a different matchup, edit the two stat dicts
+at the bottom of the file and re-run:
+
+```python
+argentina_2022 = {
+    "elo": 2144,
+    "age_mean": 28.81,
+    "age_std": 4.105,
+    "value_mean": 28_769_231,
+    "value_std": 23_981_255,
+}
+```
+
+The four squad numbers are a row of `data/processed/team_features.csv`
+(one per country and year). `elo` is the team's pre-match rating from its most
+recent appearance in `data/processed/matches_with_elo.csv`:
+
+```python
+import pandas as pd
+
+country, year = "Argentina", 2026
+
+squad = pd.read_csv("data/processed/team_features.csv")
+print(squad[(squad.country == country) & (squad.year == year)])
+
+m = pd.read_csv("data/processed/matches_with_elo.csv", parse_dates=["date"])
+played = m[(m.home_team == country) | (m.away_team == country)].sort_values("date")
+last = played.iloc[-1]
+print(last.elo_home_pre if last.home_team == country else last.elo_away_pre)
+```
+
+Two things to know about the output:
+
+- **Only the five difference features go in.** There is no venue, no date and
+  no home-advantage input, and the training data is mirrored, so the model is
+  symmetric: swapping the two teams flips the probabilities exactly. "Team A
+  win" is not "home win", despite the label the script prints.
+- **These are the baseline's numbers under the baseline's protocol** — fitted
+  on the mirror-then-split data described above. Read them as an illustration
+  of the classifier, not as a calibrated forecast. The deployment-shaped
+  accuracy is the ~52% from protocol C.
+
 ---
 
 ## Data provenance
