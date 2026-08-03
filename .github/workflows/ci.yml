@@ -1,0 +1,35 @@
+name: CI
+
+# The processed data is committed, so both of these run with no API key, no
+# scraping, and no network. That is the point: every push re-proves that the
+# quickstart in README.md works on a clean machine, and that the numbers the
+# README quotes still come out of the code.
+on: [push, pull_request]
+
+jobs:
+  validate:
+    name: Validate data + reproduce evaluation
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install pinned dependencies
+        run: pip install -r requirements.txt
+
+      - name: Data quality gate (32 assertions)
+        run: python pipeline/validate.py
+
+      - name: Reproduce the four-protocol evaluation
+        run: python models/evaluate.py
+
+      # Renders to a temp dir rather than over the committed PNGs: matplotlib
+      # output is not byte-identical across platforms, so comparing bytes would
+      # fail on every push. This checks that the figure script still runs.
+      - name: Render the results figure
+        run: python models/plot_results.py --out-dir "${{ runner.temp }}/figures"
